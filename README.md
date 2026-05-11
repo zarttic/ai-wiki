@@ -24,7 +24,11 @@ Claude Code 对话结束
 ### 1. 克隆仓库
 
 ```bash
+# Linux / Mac
 git clone https://github.com/<your-username>/ai-wiki.git ~/ai_wiki
+
+# Windows (PowerShell)
+git clone https://github.com/<your-username>/ai-wiki.git $HOME\ai-wiki
 ```
 
 ### 2. 安装依赖
@@ -51,12 +55,14 @@ pip install httpx pyyaml
 
 ### 4. 配置 Stop Hook
 
-在 `~/.claude/settings.json` 中添加（用 Python 脚本安全合并）：
+**Linux / Mac：**
 
 ```bash
 python3 -c "
-import json
-with open('/home/$(whoami)/.claude/settings.json') as f:
+import json, os
+home = os.path.expanduser('~')
+settings_path = os.path.join(home, '.claude', 'settings.json')
+with open(settings_path) as f:
     settings = json.load(f)
 if 'hooks' not in settings:
     settings['hooks'] = {}
@@ -66,17 +72,42 @@ settings['hooks']['Stop'] = [
         'hooks': [
             {
                 'type': 'command',
-                'command': 'python3 /home/$(whoami)/ai_wiki/scripts/collect.py',
+                'command': f'python3 {home}/ai_wiki/scripts/collect.py',
                 'timeout': 60
             }
         ]
     }
 ]
-with open('/home/$(whoami)/.claude/settings.json', 'w') as f:
+with open(settings_path, 'w') as f:
     json.dump(settings, f, indent=2, ensure_ascii=False)
 print('Hook configured.')
 "
 ```
+
+**Windows (PowerShell)：**
+
+```powershell
+$home = $env:USERPROFILE
+$settingsPath = "$home\.claude\settings.json"
+$settings = Get-Content $settingsPath | ConvertFrom-Json
+if (-not $settings.hooks) { $settings | Add-Member -NotePropertyName hooks -NotePropertyValue @{} }
+$settings.hooks | Add-Member -NotePropertyName Stop -NotePropertyValue @(
+    @{
+        matcher = ''
+        hooks = @(
+            @{
+                type = 'command'
+                command = "python $home\ai-wiki\scripts\collect.py"
+                timeout = 60
+            }
+        )
+    }
+) -Force
+$settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
+Write-Host "Hook configured."
+```
+
+> **注意：** Windows 下 `python3` 可能需要改为 `python`。如果遇到命令找不到，请修改 `collect.py` 的 shebang 行或 Hook 命令中的 `python3` → `python`。
 
 ## Vault 结构
 
@@ -100,6 +131,15 @@ ai_wiki/
 | **配置变更** | 修改配置文件、环境变量、安装/卸载软件包 |
 | **踩坑经验** | 认知偏差记录、避坑建议、最佳实践 |
 
+## 项目结构
+
+| 仓库 | 可见性 | 内容 |
+|------|--------|------|
+| **ai-wiki** | 公开 | 脚本 + 模板 + 文档，可分享 |
+| **ai-wiki-vault** | 私有 | 个人知识库（concepts/、connections/） |
+
+代码和知识库分离，`concepts/` 和 `connections/` 中的内容不会被提交到公开仓库。
+
 ## 适配第三方 API
 
 本项目使用 `httpx` 直接发 HTTP 请求，通过 `Authorization: Bearer` header 认证，兼容以下服务：
@@ -109,6 +149,15 @@ ai_wiki/
 - 其他 Anthropic 兼容层
 
 如果使用 Anthropic 官方 API，将 `base_url` 留空或设为 `https://api.anthropic.com` 即可。
+
+## 跨平台兼容性
+
+| 特性 | Linux/Mac | Windows |
+|------|-----------|---------|
+| 路径 | `~/ai_wiki` | `%USERPROFILE%\ai_wiki` |
+| Python 命令 | `python3` | `python` 或 `python3` |
+| Claude 目录 | `~/.claude` | `%USERPROFILE%\.claude` |
+| 换行符 | LF | CRLF（脚本已兼容） |
 
 ## 注意事项
 

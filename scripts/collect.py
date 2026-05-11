@@ -4,11 +4,14 @@
 import json
 import os
 import sys
+import platform
 
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.path.join(HOME, ".claude")
 HISTORY_FILE = os.path.join(CLAUDE_DIR, "history.jsonl")
 SESSIONS_DIR = os.path.join(CLAUDE_DIR, "sessions")
+
+# Vault 路径：Windows 和 Linux/Mac 统一放在 ~/ai_wiki
 VAULT_DIR = os.path.join(HOME, "ai_wiki")
 
 # 从 settings.json 的 env 中加载 API 配置（hook 运行时 os.environ 不含这些变量）
