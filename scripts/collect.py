@@ -4,7 +4,11 @@
 import json
 import os
 import sys
-import platform
+
+# 确保脚本所在目录在 PATH 中（plugin 运行时工作目录可能不同）
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+if SCRIPT_DIR not in sys.path:
+    sys.path.insert(0, SCRIPT_DIR)
 
 HOME = os.path.expanduser("~")
 CLAUDE_DIR = os.path.join(HOME, ".claude")

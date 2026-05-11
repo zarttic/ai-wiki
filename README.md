@@ -1,51 +1,63 @@
-# AI Wiki — Claude Code 对话知识自动收集系统
+# AI Wiki — Claude Code Plugin
 
 每次 Claude Code 对话结束后，自动提取对话中的高价值知识（技术决策、bug 原因、配置变更、踩坑经验），用 AI 分类整理后写入 Obsidian vault。
 
-## 工作原理
-
-```
-Claude Code 对话结束
-       ↓
-   Stop Hook 触发
-       ↓
-  收集脚本 (collect.py)
-   ├── 读取 ~/.claude/history.jsonl 中的对话记录
-   ├── 调用 AI API 提取四类知识
-   └── 写入 Obsidian vault
-       ├── concepts/    ← 知识页面
-       ├── connections/ ← 跨主题洞察
-       ├── index.md     ← 全局索引
-       └── log.md       ← 操作日志
-```
-
 ## 安装
 
-### 1. 克隆仓库
+### 方式一：从 GitHub 安装（推荐）
 
 ```bash
-# Linux / Mac
-git clone https://github.com/<your-username>/ai-wiki.git ~/ai_wiki
+# 1. 克隆 plugin
+git clone https://github.com/zarttic/ai-wiki.git ~/.claude/plugins/ai-wiki
 
-# Windows (PowerShell)
-git clone https://github.com/<your-username>/ai-wiki.git $HOME\ai-wiki
+# 2. 运行安装脚本
+python3 ~/.claude/plugins/ai-wiki/scripts/install.py
 ```
 
-### 2. 安装依赖
+### 方式二：手动安装
 
 ```bash
-pip install httpx pyyaml
+# 1. 创建 vault 目录
+mkdir -p ~/ai_wiki/{concepts,connections}
+
+# 2. 复制 plugin
+cp -r ai-wiki ~/.claude/plugins/ai-wiki
+
+# 3. 配置 Stop Hook（见下方）
 ```
 
-### 3. 配置 API Key
+### 配置 Stop Hook
 
-在 `~/.claude/settings.json` 中确保有以下环境变量：
+在 `~/.claude/settings.json` 中添加：
+
+```json
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 ~/.claude/plugins/ai-wiki/scripts/collect.py",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### 配置 API Key
+
+在 `~/.claude/settings.json` 的 `env` 中配置：
 
 ```json
 {
   "env": {
     "ANTHROPIC_BASE_URL": "https://api.longcat.chat/anthropic",
-    "ANTHROPIC_AUTH_TOKEN": "your-api-key-here",
+    "ANTHROPIC_AUTH_TOKEN": "your-api-key",
     "ANTHROPIC_MODEL": "LongCat-2.0-Preview"
   }
 }
@@ -53,114 +65,39 @@ pip install httpx pyyaml
 
 > 支持任何兼容 Anthropic API 格式的服务（官方 Anthropic、LongCat 等）。
 
-### 4. 配置 Stop Hook
+## 使用
 
-**Linux / Mac：**
+安装完成后，每次 Claude Code 对话结束时会自动：
 
-```bash
-python3 -c "
-import json, os
-home = os.path.expanduser('~')
-settings_path = os.path.join(home, '.claude', 'settings.json')
-with open(settings_path) as f:
-    settings = json.load(f)
-if 'hooks' not in settings:
-    settings['hooks'] = {}
-settings['hooks']['Stop'] = [
-    {
-        'matcher': '',
-        'hooks': [
-            {
-                'type': 'command',
-                'command': f'python3 {home}/ai_wiki/scripts/collect.py',
-                'timeout': 60
-            }
-        ]
-    }
-]
-with open(settings_path, 'w') as f:
-    json.dump(settings, f, indent=2, ensure_ascii=False)
-print('Hook configured.')
-"
-```
-
-**Windows (PowerShell)：**
-
-```powershell
-$home = $env:USERPROFILE
-$settingsPath = "$home\.claude\settings.json"
-$settings = Get-Content $settingsPath | ConvertFrom-Json
-if (-not $settings.hooks) { $settings | Add-Member -NotePropertyName hooks -NotePropertyValue @{} }
-$settings.hooks | Add-Member -NotePropertyName Stop -NotePropertyValue @(
-    @{
-        matcher = ''
-        hooks = @(
-            @{
-                type = 'command'
-                command = "python $home\ai-wiki\scripts\collect.py"
-                timeout = 60
-            }
-        )
-    }
-) -Force
-$settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath
-Write-Host "Hook configured."
-```
-
-> **注意：** Windows 下 `python3` 可能需要改为 `python`。如果遇到命令找不到，请修改 `collect.py` 的 shebang 行或 Hook 命令中的 `python3` → `python`。
+1. 读取对话记录
+2. 调用 AI 提取四类知识
+3. 写入 `~/ai_wiki/concepts/` 目录
+4. 更新 `~/ai_wiki/index.md` 索引
+5. 追加 `~/ai_wiki/log.md` 日志
 
 ## Vault 结构
 
 ```
-ai_wiki/
-├── .wiki-schema      # 知识提取规则（告诉 AI 如何分类）
+~/ai_wiki/
 ├── index.md          # 全局索引（自动更新）
 ├── log.md            # 操作日志（自动追加）
 ├── concepts/         # 知识页面（每个知识点一篇）
 └── connections/      # 跨主题洞察
 ```
 
-## .wiki-schema 说明
-
-定义了四类知识的提取规则：
-
-| 类型 | 判断标准 |
-|------|----------|
-| **技术决策** | 涉及工具/框架/架构的选择或切换，有方案对比 |
-| **bug原因** | 包含报错信息、排查过程、定位到根因 |
-| **配置变更** | 修改配置文件、环境变量、安装/卸载软件包 |
-| **踩坑经验** | 认知偏差记录、避坑建议、最佳实践 |
-
-## 项目结构
-
-| 仓库 | 可见性 | 内容 |
-|------|--------|------|
-| **ai-wiki** | 公开 | 脚本 + 模板 + 文档，可分享 |
-| **ai-wiki-vault** | 私有 | 个人知识库（concepts/、connections/） |
-
-代码和知识库分离，`concepts/` 和 `connections/` 中的内容不会被提交到公开仓库。
-
-## 适配第三方 API
-
-本项目使用 `httpx` 直接发 HTTP 请求，通过 `Authorization: Bearer` header 认证，兼容以下服务：
-
-- Anthropic 官方 API
-- LongCat API (`api.longcat.chat`)
-- 其他 Anthropic 兼容层
-
-如果使用 Anthropic 官方 API，将 `base_url` 留空或设为 `https://api.anthropic.com` 即可。
-
 ## 跨平台兼容性
 
 | 特性 | Linux/Mac | Windows |
 |------|-----------|---------|
-| 路径 | `~/ai_wiki` | `%USERPROFILE%\ai_wiki` |
-| Python 命令 | `python3` | `python` 或 `python3` |
+| Vault 路径 | `~/ai_wiki` | `%USERPROFILE%\ai_wiki` |
+| Python 命令 | `python3` | `python` |
 | Claude 目录 | `~/.claude` | `%USERPROFILE%\.claude` |
-| 换行符 | LF | CRLF（脚本已兼容） |
 
-## 注意事项
+## 仓库结构
 
-- 每次对话结束后自动运行，无需手动触发
-- 如果对话中没有提取到知识，会记录 `skipped` 状态
-- `concepts/` 中的文件按知识点标题命名，重复标题会覆盖
+| 仓库 | 可见性 | 内容 |
+|------|--------|------|
+| **ai-wiki** | 公开 | Plugin 源码，可分享 |
+| **ai-wiki-vault** | 私有 | 个人知识库 |
+
+代码和知识库分离，`concepts/` 和 `connections/` 中的内容不会被提交到公开仓库。

@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-.env
-# 知识库内容不纳入代码仓库
-concepts/*.md
-connections/*.md
-# index.md 和 log.md 作为模板保留

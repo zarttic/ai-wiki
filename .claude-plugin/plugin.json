@@ -1,0 +1,12 @@
+{
+  "name": "ai-wiki",
+  "description": "Auto-collect high-value knowledge from Claude Code conversations into an Obsidian vault. Extracts tech decisions, bug causes, config changes, and pitfalls.",
+  "version": "1.0.0",
+  "author": {
+    "name": "zarttic"
+  },
+  "homepage": "https://github.com/zarttic/ai-wiki",
+  "repository": "https://github.com/zarttic/ai-wiki",
+  "license": "MIT",
+  "keywords": ["knowledge", "obsidian", "vault", "notes", "documentation"]
+}
