@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+# 知识库内容不纳入代码仓库
+concepts/*.md
+connections/*.md
+# index.md 和 log.md 作为模板保留，但测试产生的跳过
+# （如果需要本地测试，可以手动取消忽略）

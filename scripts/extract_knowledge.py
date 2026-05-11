@@ -10,8 +10,17 @@ SCHEMA_FILE = os.path.join(VAULT_DIR, ".wiki-schema")
 
 
 def load_schema() -> dict:
-    with open(SCHEMA_FILE, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    """加载 .wiki-schema 规则文件。优先从 vault 目录读取，兼容开发环境。"""
+    # 标准路径：vault 根目录
+    if os.path.exists(SCHEMA_FILE):
+        with open(SCHEMA_FILE, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    # 开发环境：从 plugin 的 assets 目录读取
+    dev_schema = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", ".wiki-schema")
+    if os.path.exists(dev_schema):
+        with open(dev_schema, "r", encoding="utf-8") as f:
+            return yaml.safe_load(f)
+    raise FileNotFoundError(f"Cannot find .wiki-schema in {SCHEMA_FILE} or {dev_schema}")
 
 
 def build_extraction_prompt(schema: dict, messages: list[str]) -> str:
