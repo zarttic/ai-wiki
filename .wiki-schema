@@ -1,0 +1,40 @@
+version: "1.0"
+description: AI Wiki 知识提取规则
+
+extract:
+  - name: 技术决策
+    id: tech_decision
+    criteria:
+      - 涉及工具/框架/架构的选择或切换
+      - 包含方案对比、取舍讨论或权衡分析
+    examples:
+      - "决定用 Alpine 基本镜像而不是 Ubuntu，因为体积小"
+
+  - name: bug原因
+    id: bug_cause
+    criteria:
+      - 包含报错信息、异常行为或故障现象
+      - 有排查/分析过程且定位到根因
+    examples:
+      - "docker-compose up 报端口冲突，原因是端口被占用"
+
+  - name: 配置变更
+    id: config_change
+    criteria:
+      - 修改配置文件（.env、settings.json、nginx.conf 等）
+      - 涉及环境变量、依赖版本、服务参数调整
+      - 安装/卸载软件包或工具
+    examples:
+      - "在 settings.json 中添加了 statusLine 配置"
+
+  - name: 踩坑经验
+    id: pitfall
+    criteria:
+      - 记录了认知偏差（本来以为X，实际上Y）
+      - 包含避坑建议或最佳实践
+    examples:
+      - "npm install 在 Docker 容器中需要加 --unsafe-perm"
+
+naming:
+  concept: "{slug}.md"
+  slug_style: kebab-case
